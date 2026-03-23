@@ -4,62 +4,184 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Gamified Box</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
     <style>
+        *, *::before, *::after { box-sizing: border-box; }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background-color: #050505; 
-            font-family: 'Georgia', serif; 
+            overflow: hidden; background-color: #1a0d06; 
+            font-family: 'Cinzel', serif; 
             -webkit-user-select: none; user-select: none;
             touch-action: none;
         }
         canvas { display: block; width: 100vw; height: 100vh; }
-        
+
+        /* Ornate border frame */
+        #frame-overlay {
+            position: absolute; inset: 0;
+            pointer-events: none; z-index: 6;
+            border: 2px solid rgba(180, 140, 60, 0.18);
+            box-shadow:
+                inset 0 0 60px rgba(0,0,0,0.6),
+                inset 0 0 2px rgba(212, 175, 55, 0.15);
+        }
+
+        /* Top score/title strip */
+        #top-strip {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 38px;
+            background: linear-gradient(180deg, rgba(20,10,4,0.92) 0%, transparent 100%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10; pointer-events: none;
+            letter-spacing: 5px;
+            font-size: 9px;
+            color: rgba(180, 140, 60, 0.5);
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Bottom tray housing for mode buttons */
+        #mode-tray {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 96px;
+            background: 
+                linear-gradient(180deg, transparent 0%, rgba(14,7,3,0.95) 35%),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(212,175,55,0.012) 3px,
+                    rgba(212,175,55,0.012) 4px
+                );
+            border-top: 1px solid rgba(180, 130, 40, 0.3);
+            z-index: 10; pointer-events: none;
+            display: flex; align-items: center; justify-content: center;
+            gap: 0;
+        }
+        #mode-tray::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent);
+        }
+        /* Tray label */
+        #mode-tray::after {
+            content: 'SELECT MODE';
+            position: absolute;
+            bottom: 8px;
+            left: 50%; transform: translateX(-50%);
+            font-family: 'Cinzel', serif;
+            font-size: 7px;
+            letter-spacing: 4px;
+            color: rgba(180, 130, 40, 0.3);
+        }
+
         #dialogue-overlay {
             position: absolute;
-            top: 45%;
+            top: 42%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
+            width: 80%;
             text-align: center;
-            color: rgba(212, 175, 55, 0.9);
-            font-size: 16px;
-            line-height: 1.4;
-            letter-spacing: 2px;
-            text-transform: uppercase;
+            color: rgba(212, 175, 55, 0.92);
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-weight: 300;
+            font-size: 18px;
+            line-height: 1.5;
+            letter-spacing: 3px;
             pointer-events: none;
             z-index: 20;
             opacity: 0;
-            transition: opacity 1s ease, transform 1s ease;
-            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            transition: opacity 1.2s ease, transform 1.2s ease;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.5), 0 0 8px rgba(212,175,55,0.2);
         }
-
         #dialogue-overlay.visible {
             opacity: 1;
-            transform: translate(-50%, -55%);
+            transform: translate(-50%, -58%);
         }
 
         #wake-screen {
             position: absolute; inset: 0;
-            background: #050505;
+            background: radial-gradient(ellipse at center, #1a0d06 0%, #050505 100%);
             z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: opacity 1s ease;
+            transition: opacity 1.4s ease;
+        }
+        #wake-center {
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
         }
         #wake-sphere {
-            width: 60px; height: 60px;
+            width: 52px; height: 52px;
             border-radius: 50%;
-            background: #111;
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
-            border: 1px solid rgba(212, 175, 55, 0.2);
+            background: radial-gradient(circle at 38% 36%, #3a2510 0%, #1a0d06 60%, #0a0604 100%);
+            box-shadow: 
+                0 0 0 1px rgba(180, 130, 40, 0.3),
+                0 0 20px rgba(180, 130, 40, 0.08),
+                inset 0 1px 0 rgba(212,175,55,0.12);
+        }
+        /* Ornate ring around wake sphere */
+        #wake-ring {
+            position: absolute;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 1px solid rgba(180, 130, 40, 0.2);
+            animation: ringPulse 3s ease-in-out infinite;
+        }
+        #wake-ring-2 {
+            position: absolute;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            border: 1px solid rgba(180, 130, 40, 0.08);
+            animation: ringPulse 3s ease-in-out infinite 0.8s;
+        }
+        #wake-label {
+            position: absolute;
+            bottom: -44px; left: 50%; transform: translateX(-50%);
+            font-family: 'Cinzel', serif;
+            font-size: 8px;
+            letter-spacing: 5px;
+            color: rgba(180, 130, 40, 0.35);
+            white-space: nowrap;
+        }
+        @keyframes ringPulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.04); }
         }
 
-        #texture-overlay {
+        /* Wood grain overlay on the play field */
+        #wood-overlay {
             position: absolute; inset: 0;
-            background-image: url('https://www.transparenttextures.com/patterns/p6.png');
-            opacity: 0.1; pointer-events: none; z-index: 5;
+            background-image: 
+                repeating-linear-gradient(
+                    178deg,
+                    transparent 0px,
+                    transparent 18px,
+                    rgba(0,0,0,0.022) 18px,
+                    rgba(0,0,0,0.022) 19px
+                ),
+                repeating-linear-gradient(
+                    92deg,
+                    transparent 0px,
+                    transparent 80px,
+                    rgba(212,175,55,0.006) 80px,
+                    rgba(212,175,55,0.006) 81px
+                );
+            pointer-events: none; z-index: 4;
+        }
+
+        /* Vignette */
+        #vignette {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse 80% 90% at 50% 45%, transparent 50%, rgba(0,0,0,0.7) 100%);
+            pointer-events: none; z-index: 7;
         }
     </style>
     
@@ -69,16 +191,24 @@
 <body>
 
     <div id="wake-screen">
-        <div id="wake-sphere"></div>
+        <div id="wake-center">
+            <div id="wake-ring-2"></div>
+            <div id="wake-ring"></div>
+            <div id="wake-sphere"></div>
+            <div id="wake-label">TOUCH TO BEGIN</div>
+        </div>
     </div>
 
-    <div id="texture-overlay"></div>
+    <div id="wood-overlay"></div>
+    <div id="vignette"></div>
+    <div id="frame-overlay"></div>
+    <div id="top-strip">The Gamified Box</div>
+    <div id="mode-tray"></div>
     <div id="dialogue-overlay"></div>
 
     <script>
         function initApp() {
             try {
-                // --- CONFIGURATION ---
                 const DIALOGUE = {
                     sleep: ["Rest restores the mind", "Enter the quiet", "Dream to resolve"],
                     sunlight: ["Seek the morning light", "Warmth anchors the clock", "Clarity follows the sun"],
@@ -88,26 +218,26 @@
                 };
 
                 const PILLARS = [
-                    { id: 'sleep', color: 0xd4af37, shape: 'TorusKnotGeometry', args: [0.2, 0.06, 64, 8] },
-                    { id: 'sunlight', color: 0x4287f5, shape: 'OctahedronGeometry', args: [0.3] },
-                    { id: 'movement', color: 0xf54242, shape: 'SphereGeometry', args: [0.3, 32, 32] },
-                    { id: 'nutrition', color: 0x9c42f5, shape: 'CylinderGeometry', args: [0.2, 0.2, 0.4, 16] },
+                    { id: 'sleep',         color: 0xd4af37, shape: 'TorusKnotGeometry', args: [0.2, 0.06, 64, 8] },
+                    { id: 'sunlight',      color: 0x4287f5, shape: 'OctahedronGeometry', args: [0.3] },
+                    { id: 'movement',      color: 0xf54242, shape: 'SphereGeometry', args: [0.3, 32, 32] },
+                    { id: 'nutrition',     color: 0x9c42f5, shape: 'CylinderGeometry', args: [0.2, 0.2, 0.4, 16] },
                     { id: 'relationships', color: 0x42f569, shape: 'TorusGeometry', args: [0.2, 0.1, 16, 32] }
                 ];
 
                 const { Engine, Runner, Bodies, Composite, Constraint, Events } = Matter;
                 const engine = Engine.create();
-                engine.gravity.y = 0; // Orbit by default has no gravity
+                engine.gravity.y = 0;
 
-                let currentMode = 'orbit'; // Landing page is Orbit
+                let currentMode = 'orbit';
                 let orbitRotation = 0;
                 let screenW = window.innerWidth;
                 let screenH = window.innerHeight;
 
                 const scene = new THREE.Scene();
-                scene.fog = new THREE.FogExp2(0x050505, 0.02);
+                scene.fog = new THREE.FogExp2(0x100604, 0.018);
                 let aspect = screenW / screenH;
-                const viewSize = 10; 
+                const viewSize = 10;
                 const camera = new THREE.OrthographicCamera(-viewSize*aspect/2, viewSize*aspect/2, viewSize/2, -viewSize/2, 0.1, 100);
                 camera.position.z = 10;
 
@@ -115,13 +245,10 @@
                 renderer.setSize(screenW, screenH);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.1;
                 document.body.appendChild(renderer.domElement);
-
-                scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-                const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                dirLight.position.set(5, 5, 10);
-                dirLight.castShadow = true;
-                scene.add(dirLight);
 
                 window.addEventListener('resize', () => {
                     screenW = window.innerWidth; screenH = window.innerHeight;
@@ -132,346 +259,500 @@
                     renderer.setSize(screenW, screenH);
                 });
 
-                const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.9 });
-                const trayMat = new THREE.MeshStandardMaterial({ color: 0x2a1d15, roughness: 0.8 });
-                const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a100a, roughness: 1.0 });
-                const flipperMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.5, roughness: 0.4 });
-                const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
-                const riverStoneMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.1 });
-                
+                // --- LIGHTING: warm theatrical ---
+                scene.add(new THREE.AmbientLight(0x4a2e18, 0.9));
+                const keyLight = new THREE.DirectionalLight(0xffd090, 1.1);
+                keyLight.position.set(3, -2, 10);
+                keyLight.castShadow = true;
+                keyLight.shadow.mapSize.set(1024, 1024);
+                scene.add(keyLight);
+                const fillLight = new THREE.DirectionalLight(0x8050c0, 0.25);
+                fillLight.position.set(-5, 5, 4);
+                scene.add(fillLight);
+                // Warm glow from below (lamp-like)
+                const bottomGlow = new THREE.PointLight(0xd4850a, 0.6, 20);
+                bottomGlow.position.set(0, -6, 2);
+                scene.add(bottomGlow);
+                // Top ambient warmth
+                const topGlow = new THREE.PointLight(0xffc060, 0.3, 15);
+                topGlow.position.set(0, 5, 3);
+                scene.add(topGlow);
+
+                // --- MATERIALS: rich mahogany & brass ---
+                const mahoganyMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x3d1a0a, roughness: 0.85, metalness: 0.05
+                });
+                const brassMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xc8950a, metalness: 0.88, roughness: 0.22
+                });
+                const darkBrassMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x8a6010, metalness: 0.7, roughness: 0.4
+                });
+                const floorMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x2a1008, roughness: 0.92, metalness: 0.0
+                });
+                const flipperMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xd4a020, metalness: 0.75, roughness: 0.2
+                });
+                const bumpMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xb87820, metalness: 0.9, roughness: 0.15
+                });
+                const riverStoneMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x0d0d0d, roughness: 0.25, metalness: 0.15
+                });
+                const trayMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x1e0c06, roughness: 0.88
+                });
+
                 const boxWidth = viewSize * aspect;
                 const boxHeight = viewSize;
-                
+
+                // Floor
                 const floor = new THREE.Mesh(new THREE.PlaneGeometry(boxWidth * 2, boxHeight * 2), floorMat);
                 floor.receiveShadow = true;
                 scene.add(floor);
 
+                // Wall builder — rich mahogany walls with brass top cap
                 const physicsBodies = [];
                 function createWall(x, y, w, h) {
-                    const body = Bodies.rectangle(x, y, w, h, { isStatic: true, friction: 0.5, restitution: 0.2 });
+                    const body = Bodies.rectangle(x, y, w, h, { isStatic: true, friction: 0.4, restitution: 0.25 });
                     physicsBodies.push(body);
-                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.5), woodMat);
-                    mesh.position.set(x, -y, 0.75); 
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.6), mahoganyMat);
+                    mesh.position.set(x, -y, 0.8);
+                    mesh.castShadow = true; mesh.receiveShadow = true;
                     scene.add(mesh);
+                    // Brass trim cap on top
+                    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.12), brassMat);
+                    cap.position.set(x, -y, 1.66);
+                    scene.add(cap);
                 }
+                createWall(0, -boxHeight/2 - 0.5, boxWidth + 2, 1);
+                createWall(0, boxHeight/2 + 0.5, boxWidth + 2, 1);
+                createWall(-boxWidth/2 - 0.5, 0, 1, boxHeight);
+                createWall(boxWidth/2 + 0.5, 0, 1, boxHeight);
 
-                createWall(0, -boxHeight/2 - 0.5, boxWidth + 2, 1); 
-                createWall(0, boxHeight/2 + 0.5, boxWidth + 2, 1); 
-                createWall(-boxWidth/2 - 0.5, 0, 1, boxHeight); 
-                createWall(boxWidth/2 + 0.5, 0, 1, boxHeight); 
-
+                // --- MARBLES (habit orbs) ---
                 const marbles = [];
                 PILLARS.forEach((pillar, i) => {
-                    // Initial positions set for Orbit ring
                     const angle = (i / PILLARS.length) * (Math.PI * 2);
-                    const x = Math.cos(angle) * 3;
-                    const y = Math.sin(angle) * 3;
-
-                    const body = Bodies.circle(x, y, 0.3, { restitution: 0.6, friction: 0.001, density: 0.05, isSensor: true });
+                    const body = Bodies.circle(Math.cos(angle)*3, Math.sin(angle)*3, 0.3, {
+                        restitution: 0.65, friction: 0.001, density: 0.05, isSensor: true
+                    });
                     physicsBodies.push(body);
-                    const mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, opacity: 1, roughness: 0.1 });
-                    const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32), mat);
+                    const mat = new THREE.MeshPhysicalMaterial({
+                        color: 0xffffff,
+                        transmission: 0.92,
+                        roughness: 0.05,
+                        metalness: 0.0,
+                        ior: 1.5,
+                        thickness: 0.4,
+                        clearcoat: 1.0,
+                        clearcoatRoughness: 0.05
+                    });
+                    const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 48, 48), mat);
                     mesh.castShadow = true;
                     scene.add(mesh);
                     marbles.push({ body, mesh, material: mat, pillarData: pillar, fillLevel: 0, logs: 0, currentScale: 1 });
                 });
 
+                // --- MODE BUTTONS: large pearl marble spheres ---
                 const INSET_MODES = [
-                    { id: 'orbit', color: 0xa855f7 },
-                    { id: 'sandbox', color: 0x777777 },
-                    { id: 'billiards', color: 0x1a5e20 },
-                    { id: 'pinball', color: 0x22c55e },
-                    { id: 'maze', color: 0x3b82f6 },
-                    { id: 'koi', color: 0xffffff }
+                    { id: 'orbit',    color: 0xa855f7, label: 'Orbit'   },
+                    { id: 'sandbox',  color: 0x888888, label: 'Chaos'   },
+                    { id: 'billiards',color: 0x2d8a40, label: 'Billiards'},
+                    { id: 'pinball',  color: 0x22c55e, label: 'Pinball' },
+                    { id: 'maze',     color: 0x3b82f6, label: 'Maze'    },
+                    { id: 'koi',      color: 0xffffff, label: 'Koi'     }
                 ];
 
                 const insetButtons = [];
-                const insetSpacing = Math.min(boxWidth / 7.5, 1.1);
+                const BTN_R = 0.32; // larger pearl spheres
+                const insetSpacing = Math.min(boxWidth / 7, 1.18);
                 const insetStartX = -((INSET_MODES.length - 1) * insetSpacing) / 2;
+                const BTN_Y = boxHeight / 2 - 0.82; // bottom of play field
+
+                // Pearl material base
+                function makePearlMat(locked) {
+                    return new THREE.MeshPhysicalMaterial({
+                        color: locked ? 0x1a1008 : 0xf0e8d8,
+                        metalness: locked ? 0.1 : 0.06,
+                        roughness: locked ? 0.9 : 0.12,
+                        clearcoat: locked ? 0 : 1.0,
+                        clearcoatRoughness: 0.08,
+                        transmission: locked ? 0.0 : 0.05,
+                        emissive: locked ? 0x000000 : 0x080602,
+                        emissiveIntensity: 0
+                    });
+                }
+
+                // Wooden tray behind buttons
+                const trayMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(boxWidth * 0.95, 1.0, 0.6),
+                    trayMat
+                );
+                trayMesh.position.set(0, -BTN_Y, 0.2);
+                trayMesh.receiveShadow = true;
+                scene.add(trayMesh);
+                // Brass tray edge
+                const trayEdge = new THREE.Mesh(
+                    new THREE.BoxGeometry(boxWidth * 0.95, 1.0, 0.06),
+                    brassMat
+                );
+                trayEdge.position.set(0, -BTN_Y, 0.52);
+                scene.add(trayEdge);
 
                 INSET_MODES.forEach((mode, i) => {
-                    const mat = new THREE.MeshPhysicalMaterial({ color: 0x111111, emissive: 0x000000, emissiveIntensity: 0, transmission: 0.8, roughness: 0.1 });
-                    const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 32, 32), mat);
+                    const mat = makePearlMat(mode.id !== 'orbit');
+                    const mesh = new THREE.Mesh(new THREE.SphereGeometry(BTN_R, 48, 48), mat);
                     const x = insetStartX + i * insetSpacing;
-                    const y = boxHeight/2 - 0.7; 
-                    mesh.position.set(x, -y, 0.4);
+                    mesh.position.set(x, -BTN_Y, 0.56 + BTN_R);
+                    mesh.castShadow = true;
                     scene.add(mesh);
-                    const light = new THREE.PointLight(mode.color, 0, 3);
-                    light.position.copy(mesh.position); light.position.z += 0.5;
+                    // Glow point light above each button
+                    const light = new THREE.PointLight(mode.color, 0, 2.5);
+                    light.position.set(x, -BTN_Y, 1.4);
                     scene.add(light);
-                    // Orbit is unlocked by default as it is the landing page
+                    // Subtle brass cup/socket under each sphere
+                    const cup = new THREE.Mesh(
+                        new THREE.CylinderGeometry(BTN_R * 0.7, BTN_R * 0.55, 0.18, 32),
+                        darkBrassMat
+                    );
+                    cup.rotation.x = Math.PI / 2;
+                    cup.position.set(x, -BTN_Y, 0.52);
+                    scene.add(cup);
                     insetButtons.push({ mesh, material: mat, light, modeData: mode, unlocked: (mode.id === 'orbit') });
                 });
 
+                // --- BILLIARDS POCKETS ---
                 const billiardsPockets = [];
-                const pocketGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 32);
-                const pocketMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
-                [{x: -boxWidth/2 + 0.6, y: -boxHeight/2 + 0.6}, {x: boxWidth/2 - 0.6, y: -boxHeight/2 + 0.6}, {x: -boxWidth/2 + 0.6, y: boxHeight/2 - 0.6}, {x: boxWidth/2 - 0.6, y: boxHeight/2 - 0.6}, {x: -boxWidth/2 + 0.4, y: 0}, {x: boxWidth/2 - 0.4, y: 0}].forEach(p => {
+                const pocketGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.1, 32);
+                const pocketMat = new THREE.MeshBasicMaterial({ color: 0x050200 });
+                [{x:-boxWidth/2+0.6,y:-boxHeight/2+0.6},{x:boxWidth/2-0.6,y:-boxHeight/2+0.6},{x:-boxWidth/2+0.6,y:boxHeight/2-0.6},{x:boxWidth/2-0.6,y:boxHeight/2-0.6},{x:-boxWidth/2+0.4,y:0},{x:boxWidth/2-0.4,y:0}].forEach(p => {
                     const mesh = new THREE.Mesh(pocketGeo, pocketMat);
-                    mesh.position.set(p.x, -p.y, 0.1); mesh.rotation.x = Math.PI / 2; mesh.visible = false;
+                    mesh.position.set(p.x, -p.y, 0.1); mesh.rotation.x = Math.PI/2; mesh.visible = false;
                     scene.add(mesh); billiardsPockets.push(mesh);
                 });
-                
+
+                // --- MAZE WALLS ---
                 const mazeWalls = [];
-                [{ x: -2.0, y: 0.0, w: 0.5, h: 4.0 }, { x: 2.0, y: -2.0, w: 4.0, h: 0.5 }, { x: 1.0, y: 2.0, w: 5.0, h: 0.5 }].forEach(w => {
+                [{x:-2.0,y:0.0,w:0.5,h:4.0},{x:2.0,y:-2.0,w:4.0,h:0.5},{x:1.0,y:2.0,w:5.0,h:0.5}].forEach(w => {
                     const body = Bodies.rectangle(w.x, w.y, w.w, w.h, { isStatic: true, isSensor: true });
                     physicsBodies.push(body);
-                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w.w, w.h, 1.5), woodMat);
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w.w, w.h, 1.5), mahoganyMat);
                     mesh.position.set(w.x, -w.y, 0.75); mesh.visible = false;
                     scene.add(mesh); mazeWalls.push({body, mesh});
                 });
 
+                // --- PINBALL BUMPERS: ornate brass caps like reference ---
                 const pinballElements = [];
-                [{ x: 0, y: -2.5, r: 0.6 }, { x: -1.5, y: -1.0, r: 0.5 }, { x: 1.5, y: -1.0, r: 0.5 }].forEach(b => {
-                    const body = Bodies.circle(b.x, b.y, b.r, { isStatic: true, isSensor: true, restitution: 1.5 });
+                [{x:0,y:-2.5,r:0.6},{x:-1.5,y:-1.0,r:0.5},{x:1.5,y:-1.0,r:0.5}].forEach(b => {
+                    const body = Bodies.circle(b.x, b.y, b.r, { isStatic: true, isSensor: true, restitution: 1.6 });
                     physicsBodies.push(body);
-                    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(b.r, b.r, 0.5, 32), brassMat);
-                    mesh.rotation.x = Math.PI / 2; mesh.position.set(b.x, -b.y, 0.25); mesh.castShadow = true; mesh.visible = false;
-                    scene.add(mesh); pinballElements.push({body, mesh});
+                    // Main cylinder (brass body)
+                    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(b.r, b.r * 0.9, 0.55, 32), bumpMat);
+                    mesh.rotation.x = Math.PI/2; mesh.position.set(b.x, -b.y, 0.28); mesh.castShadow = true; mesh.visible = false;
+                    scene.add(mesh);
+                    // Decorative top cap (dome)
+                    const cap = new THREE.Mesh(new THREE.SphereGeometry(b.r * 0.92, 32, 16, 0, Math.PI*2, 0, Math.PI*0.5), brassMat);
+                    cap.position.set(b.x, -b.y, 0.55); cap.visible = false;
+                    scene.add(cap);
+                    // Ring collar
+                    const ring = new THREE.Mesh(new THREE.TorusGeometry(b.r, 0.06, 12, 48), brassMat);
+                    ring.rotation.x = Math.PI/2; ring.position.set(b.x, -b.y, 0.56); ring.visible = false;
+                    scene.add(ring);
+                    // Warm glow on bumpers
+                    const glow = new THREE.PointLight(0xd4850a, 0, 3.5);
+                    glow.position.set(b.x, -b.y, 1.2);
+                    scene.add(glow);
+                    pinballElements.push({body, mesh, extras: [cap, ring, glow]});
                 });
 
+                // --- FLIPPERS ---
                 const flippers = [];
                 function createFlipper(x, y, w, h, isLeft) {
-                    const body = Bodies.rectangle(x, y, w, h, { isSensor: true }); 
+                    const body = Bodies.rectangle(x, y, w, h, { isSensor: true });
                     const pivotX = isLeft ? x - w/2 + 0.2 : x + w/2 - 0.2;
-                    const pivot = Constraint.create({ pointA: { x: pivotX, y: y }, bodyB: body, pointB: { x: isLeft ? -w/2 + 0.2 : w/2 - 0.2, y: 0 }, stiffness: 1, length: 0 });
-                    const spring = Constraint.create({ pointA: { x: x, y: y + 2 }, bodyB: body, pointB: { x: isLeft ? w/2 : -w/2, y: 0 }, stiffness: 0.02, length: 1 });
+                    const pivot = Constraint.create({ pointA:{x:pivotX,y}, bodyB:body, pointB:{x:isLeft?-w/2+0.2:w/2-0.2,y:0}, stiffness:1, length:0 });
+                    const spring = Constraint.create({ pointA:{x,y:y+2}, bodyB:body, pointB:{x:isLeft?w/2:-w/2,y:0}, stiffness:0.02, length:1 });
                     physicsBodies.push(body); Composite.add(engine.world, [pivot, spring]);
-                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.0), flipperMat);
-                    mesh.position.z = 0.5; mesh.visible = false;
-                    scene.add(mesh); flippers.push({ body, mesh, isLeft });
+                    // Flipper shape — tapered
+                    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.9), flipperMat);
+                    mesh.position.z = 0.45; mesh.visible = false; mesh.castShadow = true;
+                    scene.add(mesh); flippers.push({body, mesh, isLeft});
                 }
-                createFlipper(-1.5, boxHeight/2 - 2.0, 2.5, 0.4, true);
-                createFlipper(1.5, boxHeight/2 - 2.0, 2.5, 0.4, false);
+                createFlipper(-1.5, boxHeight/2 - 2.0, 2.5, 0.38, true);
+                createFlipper(1.5,  boxHeight/2 - 2.0, 2.5, 0.38, false);
 
+                // --- KOI ELEMENTS ---
                 const koiElements = [];
                 const koiTray = new THREE.Mesh(new THREE.BoxGeometry(boxWidth, 1.5, 0.8), trayMat);
-                koiTray.position.set(0, -(boxHeight/2 - 1.2), 0.4); koiTray.visible = false;
+                koiTray.position.set(0, -(boxHeight/2-1.2), 0.4); koiTray.visible = false;
                 scene.add(koiTray); koiElements.push(koiTray);
 
-                const stonePos = [{x: -1.2, y: -2.0, s: 0.6}, {x: 1.8, y: -2.8, s: 0.9}, {x: -2.5, y: 0.5, s: 0.8}, {x: 2.2, y: 0.2, s: 0.7}, {x: 0.5, y: 2.5, s: 0.5}, {x: -1.0, y: 3.5, s: 0.4}, {x: 1.8, y: 2.8, s: 0.7}, {x: 0.2, y: -0.5, s: 0.5}];
+                const stonePos = [{x:-1.2,y:-2.0,s:0.6},{x:1.8,y:-2.8,s:0.9},{x:-2.5,y:0.5,s:0.8},{x:2.2,y:0.2,s:0.7},{x:0.5,y:2.5,s:0.5},{x:-1.0,y:3.5,s:0.4},{x:1.8,y:2.8,s:0.7},{x:0.2,y:-0.5,s:0.5}];
                 stonePos.forEach(p => {
                     const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 16), riverStoneMat);
-                    mesh.scale.set(p.s, p.s * 0.4, p.s * 0.7); mesh.position.set(p.x, -p.y, 0.2); mesh.rotation.z = Math.random() * Math.PI; mesh.visible = false;
+                    mesh.scale.set(p.s, p.s*0.4, p.s*0.7); mesh.position.set(p.x, -p.y, 0.2); mesh.rotation.z = Math.random()*Math.PI; mesh.visible = false;
                     scene.add(mesh); koiElements.push(mesh);
                 });
 
                 Composite.add(engine.world, physicsBodies);
 
-                const state = { unlockedOrbit: true, unlockedSandbox: false, unlockedBilliards: false, unlockedPinball: false, unlockedMaze: false, unlockedKoi: false };
+                const state = { unlockedOrbit:true, unlockedSandbox:false, unlockedBilliards:false, unlockedPinball:false, unlockedMaze:false, unlockedKoi:false };
 
                 function saveState() {
-                    const data = { marbles: marbles.map(m => ({ id: m.pillarData.id, fill: m.fillLevel, logs: m.logs })), mode: currentMode };
-                    localStorage.setItem('marbles_master_save_v7', JSON.stringify(data));
+                    const data = { marbles: marbles.map(m => ({id:m.pillarData.id, fill:m.fillLevel, logs:m.logs})), mode: currentMode };
+                    localStorage.setItem('gamified_box_v8', JSON.stringify(data));
                 }
 
                 function loadState() {
-                    const raw = localStorage.getItem('marbles_master_save_v7');
+                    const raw = localStorage.getItem('gamified_box_v8');
                     if (!raw) return;
                     try {
                         const data = JSON.parse(raw);
-                        if (data.marbles) {
-                            data.marbles.forEach(s => {
-                                const m = marbles.find(item => item.pillarData.id === s.id);
-                                if (m) { m.fillLevel = s.fill; m.logs = s.logs; updateMarbleVisual(m); }
-                            });
-                        }
-                        if (data.mode) window.activateMode(data.mode);
+                        if (data.marbles) data.marbles.forEach(s => {
+                            const m = marbles.find(x => x.pillarData.id === s.id);
+                            if (m) { m.fillLevel = s.fill; m.logs = s.logs; updateMarbleVisual(m); }
+                        });
+                        // FIX: checkUnlocks BEFORE activateMode so flags are set
                         checkUnlocks();
+                        if (data.mode) window.activateMode(data.mode);
                     } catch(e) {}
                 }
 
                 function updateMarbleVisual(m) {
                     const targetColor = new THREE.Color(m.pillarData.color);
                     const hollowColor = new THREE.Color(0xffffff);
-                    const visualProgress = m.fillLevel / 0.9;
-                    m.material.color.copy(hollowColor).lerp(targetColor, visualProgress);
-                    m.material.transmission = 0.9 - (0.8 * visualProgress);
+                    const p = m.fillLevel / 0.9;
+                    m.material.color.copy(hollowColor).lerp(targetColor, p);
+                    m.material.transmission = 0.92 - 0.82 * p;
+                    m.material.emissive = new THREE.Color(m.pillarData.color);
+                    m.material.emissiveIntensity = p * 0.12;
                 }
 
                 function logHabit(marble) {
                     if (marble.fillLevel >= 0.9) return;
                     const prompts = DIALOGUE[marble.pillarData.id];
-                    const promptText = prompts[marble.logs % prompts.length];
                     const overlay = document.getElementById('dialogue-overlay');
-                    overlay.innerText = promptText; overlay.classList.add('visible');
-                    setTimeout(() => overlay.classList.remove('visible'), 3500);
-                    marble.logs++; marble.fillLevel = Math.round((marble.fillLevel + 0.10) * 10) / 10;
-                    marble.fillLevel = Math.min(marble.fillLevel, 0.9);
+                    overlay.innerText = prompts[marble.logs % prompts.length];
+                    overlay.classList.add('visible');
+                    setTimeout(() => overlay.classList.remove('visible'), 3800);
+                    marble.logs++; 
+                    marble.fillLevel = Math.min(Math.round((marble.fillLevel + 0.10) * 10) / 10, 0.9);
                     updateMarbleVisual(marble); checkUnlocks(); saveState();
                 }
 
                 function checkUnlocks() {
-                    // Sandbox now unlocks after the first "inform" interaction
-                    const isSandboxUnlocked = marbles.some(m => m.fillLevel > 0);
-                    const totalFillCount = marbles.reduce((sum, m) => sum + (m.fillLevel > 0 ? 1 : 0), 0);
-                    const isBilliardsUnlocked = totalFillCount >= 2 || marbles.some(m => m.fillLevel >= 0.2);
-                    const isPinballUnlocked = marbles.some(m => m.fillLevel >= 0.3);
-                    const isMazeUnlocked = marbles.some(m => m.fillLevel >= 0.45);
-                    const isKoiUnlocked = marbles.every(m => m.fillLevel >= 0.9);
+                    const isSandboxUnlocked  = marbles.some(m => m.fillLevel > 0);
+                    const totalFillCount     = marbles.reduce((s,m) => s + (m.fillLevel > 0 ? 1 : 0), 0);
+                    const isBilliardsUnlocked= totalFillCount >= 2 || marbles.some(m => m.fillLevel >= 0.2);
+                    const isPinballUnlocked  = marbles.some(m => m.fillLevel >= 0.3);
+                    const isMazeUnlocked     = marbles.some(m => m.fillLevel >= 0.45);
+                    const isKoiUnlocked      = marbles.every(m => m.fillLevel >= 0.9);
 
                     insetButtons.forEach(btn => {
-                        const mId = btn.modeData.id;
-                        let unlocked = (mId === 'orbit') || 
-                                       (mId === 'sandbox' && isSandboxUnlocked) || 
-                                       (mId === 'billiards' && isBilliardsUnlocked) || 
-                                       (mId === 'pinball' && isPinballUnlocked) || 
-                                       (mId === 'maze' && isMazeUnlocked) || 
-                                       (mId === 'koi' && isKoiUnlocked);
+                        const id = btn.modeData.id;
+                        const unlocked = id==='orbit' || (id==='sandbox'&&isSandboxUnlocked) || (id==='billiards'&&isBilliardsUnlocked) || (id==='pinball'&&isPinballUnlocked) || (id==='maze'&&isMazeUnlocked) || (id==='koi'&&isKoiUnlocked);
                         btn.unlocked = unlocked;
-                        const isActive = currentMode === mId;
+                        const isActive = currentMode === id;
+
                         if (unlocked) {
-                            btn.material.color.setHex(btn.modeData.color); btn.material.emissive.setHex(btn.modeData.color);
-                            btn.material.emissiveIntensity = isActive ? 2.5 : 0.8; btn.light.intensity = isActive ? 1.5 : 0.4;
+                            // Pearl white, glowing when active
+                            btn.material.color.setHex(isActive ? 0xffffff : 0xe8deca);
+                            btn.material.roughness = isActive ? 0.05 : 0.15;
+                            btn.material.clearcoat = 1.0;
+                            btn.material.emissive = new THREE.Color(btn.modeData.color);
+                            btn.material.emissiveIntensity = isActive ? 0.35 : 0.04;
+                            btn.light.intensity = isActive ? 1.8 : 0.3;
+                            btn.light.color.setHex(btn.modeData.color);
                         } else {
-                            btn.material.color.setHex(0x111111); btn.material.emissive.setHex(0x000000);
-                            btn.material.emissiveIntensity = 0; btn.light.intensity = 0;
+                            btn.material.color.setHex(0x180d06);
+                            btn.material.roughness = 0.92;
+                            btn.material.clearcoat = 0;
+                            btn.material.emissiveIntensity = 0;
+                            btn.light.intensity = 0;
                         }
+                        btn.material.needsUpdate = true;
                     });
-                    state.unlockedSandbox = isSandboxUnlocked; state.unlockedBilliards = isBilliardsUnlocked;
-                    state.unlockedPinball = isPinballUnlocked; state.unlockedMaze = isMazeUnlocked; state.unlockedKoi = isKoiUnlocked;
+
+                    state.unlockedSandbox=isSandboxUnlocked; state.unlockedBilliards=isBilliardsUnlocked;
+                    state.unlockedPinball=isPinballUnlocked; state.unlockedMaze=isMazeUnlocked; state.unlockedKoi=isKoiUnlocked;
                 }
 
                 window.activateMode = function(newMode) {
-                    if (newMode === 'sandbox' && !state.unlockedSandbox) return;
-                    if (newMode === 'billiards' && !state.unlockedBilliards) return;
-                    if (newMode === 'pinball' && !state.unlockedPinball) return;
-                    if (newMode === 'maze' && !state.unlockedMaze) return;
-                    if (newMode === 'koi' && !state.unlockedKoi) return;
-                    if (newMode === 'koi' && currentMode !== 'koi') { playAcousticRipple(); if (navigator.vibrate) navigator.vibrate([50, 100, 50, 100, 200]); }
-                    
+                    if (newMode==='sandbox'  && !state.unlockedSandbox)   return;
+                    if (newMode==='billiards' && !state.unlockedBilliards) return;
+                    if (newMode==='pinball'  && !state.unlockedPinball)    return;
+                    if (newMode==='maze'     && !state.unlockedMaze)       return;
+                    if (newMode==='koi'      && !state.unlockedKoi)        return;
+                    if (newMode==='koi' && currentMode!=='koi') { playAcousticRipple(); if (navigator.vibrate) navigator.vibrate([50,100,50,100,200]); }
+
                     const oldMode = currentMode; currentMode = newMode;
-                    checkUnlocks(); if (oldMode !== newMode) saveState();
-                    
-                    floorMat.color.setHex(0x1a100a);
+                    checkUnlocks(); if (oldMode!==newMode) saveState();
+
+                    floorMat.color.setHex(0x2a1008);
                     marbles.forEach(m => {
-                        m.body.isSensor = (newMode === 'orbit'); // Marbles are sensors in Orbit so they pass through each other
-                        m.mesh.visible = true; m.body.restitution = 0.6; m.body.frictionAir = 0.001;
-                        Matter.Body.scale(m.body, 1/m.currentScale, 1/m.currentScale); m.mesh.scale.set(1, 1, 1); m.currentScale = 1;
+                        m.body.isSensor = (newMode==='orbit');
+                        m.mesh.visible = true; m.body.restitution = 0.65; m.body.frictionAir = 0.001;
+                        Matter.Body.scale(m.body, 1/m.currentScale, 1/m.currentScale); m.mesh.scale.set(1,1,1); m.currentScale = 1;
                         updateMarbleVisual(m);
                     });
-                    billiardsPockets.forEach(p => { p.visible = false; }); mazeWalls.forEach(w => { w.body.isSensor = true; w.mesh.visible = false; });
-                    pinballElements.forEach(e => { e.body.isSensor = true; e.mesh.visible = false; }); flippers.forEach(f => { f.body.isSensor = true; f.mesh.visible = false; });
-                    koiElements.forEach(e => { e.visible = false; }); engine.gravity.x = 0; engine.gravity.y = 0;
+                    billiardsPockets.forEach(p => p.visible=false);
+                    mazeWalls.forEach(w => { w.body.isSensor=true; w.mesh.visible=false; });
+                    pinballElements.forEach(e => { e.body.isSensor=true; e.mesh.visible=false; e.extras.forEach(x => { if(x.visible!==undefined) x.visible=false; else x.intensity=0; }); });
+                    flippers.forEach(f => { f.body.isSensor=true; f.mesh.visible=false; });
+                    koiElements.forEach(e => e.visible=false);
+                    engine.gravity.x = 0; engine.gravity.y = 0;
 
-                    if (newMode === 'orbit') {
-                        // Position marbles in circle, rotation handled in animate loop
-                    } else if (newMode === 'sandbox') {
-                        marbles.forEach(m => {
-                           Matter.Body.setPosition(m.body, { x: -boxWidth/2 + 1 + Math.random() * (boxWidth - 2), y: -boxHeight/2 + 1 + Math.random() * (boxHeight - 2) });
+                    if (newMode==='orbit') {
+                        // orbital — handled in animate loop
+                    } else if (newMode==='sandbox') {
+                        marbles.forEach(m => Matter.Body.setPosition(m.body, {x:-boxWidth/2+1+Math.random()*(boxWidth-2), y:-boxHeight/2+1+Math.random()*(boxHeight-2)}));
+                    } else if (newMode==='billiards') {
+                        floorMat.color.setHex(0x0e3a18);
+                        billiardsPockets.forEach(p => p.visible=true);
+                        marbles.forEach((m,i) => {
+                            m.body.restitution=0.92; m.body.frictionAir=0.014;
+                            m.material.color.setHex(i===0 ? 0xd4af37 : m.pillarData.color);
+                            m.material.transmission=0.08;
                         });
-                    } else if (newMode === 'billiards') {
-                        floorMat.color.setHex(0x1a5e20); billiardsPockets.forEach(p => p.visible = true);
-                        marbles.forEach((m, i) => {
-                            m.body.restitution = 0.9; m.body.frictionAir = 0.015;
-                            if (i === 0) m.material.color.setHex(0xd4af37); else m.material.color.setHex(m.pillarData.color);
-                            m.material.transmission = 0.1;
+                        Matter.Body.setPosition(marbles[0].body, {x:0, y:boxHeight/4});
+                        const r=0.3, sy=-boxHeight/4, ho=r*Math.sqrt(3);
+                        const rack=[{x:0,y:sy},{x:-r,y:sy-ho},{x:r,y:sy-ho},{x:0,y:sy-ho*2}];
+                        for(let i=1;i<marbles.length;i++) Matter.Body.setPosition(marbles[i].body, rack[i-1]);
+                    } else if (newMode==='pinball') {
+                        floorMat.color.setHex(0x280a02); engine.gravity.y=1.2;
+                        flippers.forEach(f => { f.body.isSensor=false; f.mesh.visible=true; });
+                        pinballElements.forEach(e => {
+                            e.body.isSensor=false; e.mesh.visible=true;
+                            e.extras.forEach(x => { if(x.visible!==undefined) x.visible=true; else x.intensity=0.9; });
                         });
-                        const cue = marbles[0]; Matter.Body.setPosition(cue.body, { x: 0, y: boxHeight/4 });
-                        const r = 0.3; const startY = -boxHeight/4; const hOffset = r * Math.sqrt(3);
-                        const rackPositions = [{x: 0, y: startY}, {x: -r, y: startY - hOffset}, {x: r, y: startY - hOffset}, {x: 0, y: startY - (hOffset * 2)}];
-                        for(let i=1; i<marbles.length; i++) Matter.Body.setPosition(marbles[i].body, rackPositions[i-1]);
-                    } else if (newMode === 'pinball') {
-                        floorMat.color.setHex(0x3e1505); engine.gravity.y = 1.2;
-                        flippers.forEach(f => { f.body.isSensor = false; f.mesh.visible = true; }); pinballElements.forEach(e => { e.body.isSensor = false; e.mesh.visible = true; });
-                        const activeBall = marbles[0]; Matter.Body.scale(activeBall.body, 0.5, 0.5); activeBall.mesh.scale.set(0.5, 0.5, 0.5); activeBall.currentScale = 0.5;
-                        Matter.Body.setPosition(activeBall.body, { x: 0, y: boxHeight/2 - 2.5 });
-                        for (let i = 1; i < marbles.length; i++) { Matter.Body.setPosition(marbles[i].body, { x: 100, y: 100 }); marbles[i].body.isSensor = true; marbles[i].mesh.visible = false; }
-                    } else if (newMode === 'maze') mazeWalls.forEach(w => { w.body.isSensor = false; w.mesh.visible = true; });
-                    else if (newMode === 'koi') {
-                        floorMat.color.setHex(0x111111); koiElements.forEach(e => { e.visible = true; });
-                        const tWidth = Math.min(boxWidth * 0.9, 8); const sX = -tWidth / 2; const step = tWidth / 5;
-                        marbles.forEach((m, i) => {
+                        const ab = marbles[0];
+                        Matter.Body.scale(ab.body, 0.5, 0.5); ab.mesh.scale.set(0.5,0.5,0.5); ab.currentScale=0.5;
+                        Matter.Body.setPosition(ab.body, {x:0, y:boxHeight/2-2.5});
+                        for (let i=1;i<marbles.length;i++) { Matter.Body.setPosition(marbles[i].body,{x:100,y:100}); marbles[i].body.isSensor=true; marbles[i].mesh.visible=false; }
+                    } else if (newMode==='maze') {
+                        mazeWalls.forEach(w => { w.body.isSensor=false; w.mesh.visible=true; });
+                    } else if (newMode==='koi') {
+                        floorMat.color.setHex(0x060e14); koiElements.forEach(e => e.visible=true);
+                        const tW=Math.min(boxWidth*0.9,8), sX=-tW/2, step=tW/5;
+                        marbles.forEach((m,i) => {
                             if (m.pillarData.shape && THREE[m.pillarData.shape]) { m.mesh.geometry.dispose(); m.mesh.geometry = new THREE[m.pillarData.shape](...m.pillarData.args); }
-                            m.body.isSensor = true; const targetX = sX + step * i + (step/2); const targetY = boxHeight/2 - 1.2; 
-                            Matter.Body.setPosition(m.body, { x: targetX, y: targetY });
+                            m.body.isSensor=true;
+                            Matter.Body.setPosition(m.body, {x: sX+step*i+(step/2), y: boxHeight/2-1.2});
                         });
                     }
                 };
 
+                // --- INPUT ---
                 const raycaster = new THREE.Raycaster();
                 const mouseCoords = new THREE.Vector2();
-                let flickState = { active: false, marble: null, startX: 0, startY: 0 };
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                let flickState = { active:false, marble:null, startX:0, startY:0 };
+                const AC = window.AudioContext || window.webkitAudioContext;
                 let audioCtx = null;
 
                 window.addEventListener('pointerdown', async (e) => {
-                    if (!audioCtx && AudioContext) { try { audioCtx = new AudioContext(); if (typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission(); } catch(err) {} }
-                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-                    const wakeScreen = document.getElementById('wake-screen');
-                    if (wakeScreen.style.display !== 'none') { wakeScreen.style.opacity = 0; setTimeout(() => wakeScreen.style.display = 'none', 1000); return; }
-                    mouseCoords.x = (e.clientX / window.innerWidth) * 2 - 1; mouseCoords.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                    raycaster.setFromCamera(mouseCoords, camera);
-                    const activeMarbles = marbles.filter(m => m.mesh.visible).map(m => m.mesh);
-                    const navButtons = insetButtons.map(b => b.mesh);
-                    const intersects = raycaster.intersectObjects([...activeMarbles, ...navButtons]);
-                    if (intersects.length > 0) {
-                        const hitMesh = intersects[0].object;
-                        const navBtn = insetButtons.find(b => b.mesh === hitMesh); if (navBtn) { if (navBtn.unlocked) window.activateMode(navBtn.modeData.id); return; }
-                        const marble = marbles.find(m => m.mesh === hitMesh); if (marble) { flickState = { active: true, marble: marble, startX: e.clientX, startY: e.clientY }; logHabit(marble); return; }
+                    if (!audioCtx && AC) { try { audioCtx = new AC(); } catch(err){} }
+                    if (audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+                    const ws = document.getElementById('wake-screen');
+                    if (ws.style.display !== 'none') {
+                        ws.style.opacity = 0;
+                        setTimeout(() => ws.style.display = 'none', 1400);
+                        return;
                     }
-                    if (currentMode === 'pinball') { const isLeft = e.clientX < window.innerWidth / 2; flippers.forEach(f => { if (f.isLeft === isLeft) Matter.Body.applyForce(f.body, { x: f.body.position.x + (f.isLeft ? 1 : -1), y: f.body.position.y }, { x: 0, y: -0.06 }); }); }
+                    mouseCoords.x = (e.clientX/window.innerWidth)*2-1;
+                    mouseCoords.y = -(e.clientY/window.innerHeight)*2+1;
+                    raycaster.setFromCamera(mouseCoords, camera);
+                    const hitMeshes = [...marbles.filter(m=>m.mesh.visible).map(m=>m.mesh), ...insetButtons.map(b=>b.mesh)];
+                    const intersects = raycaster.intersectObjects(hitMeshes);
+                    if (intersects.length > 0) {
+                        const hit = intersects[0].object;
+                        const btn = insetButtons.find(b=>b.mesh===hit);
+                        if (btn) { if (btn.unlocked) window.activateMode(btn.modeData.id); return; }
+                        const marble = marbles.find(m=>m.mesh===hit);
+                        if (marble) { flickState={active:true,marble,startX:e.clientX,startY:e.clientY}; logHabit(marble); return; }
+                    }
+                    if (currentMode==='pinball') {
+                        const isLeft = e.clientX < window.innerWidth/2;
+                        flippers.forEach(f => { if(f.isLeft===isLeft) Matter.Body.applyForce(f.body,{x:f.body.position.x+(f.isLeft?1:-1),y:f.body.position.y},{x:0,y:-0.06}); });
+                    }
                 });
 
                 window.addEventListener('pointerup', (e) => {
                     if (flickState.active && flickState.marble) {
-                        const dx = e.clientX - flickState.startX; const dy = e.clientY - flickState.startY;
-                        if (Math.abs(dx) > 15 || Math.abs(dy) > 15) {
-                            let fX = dx * 0.00035; let fY = dy * 0.00035; const maxF = 0.09;
-                            fX = Math.max(-maxF, Math.min(maxF, fX)); fY = Math.max(-maxF, Math.min(maxF, fY));
-                            Matter.Body.applyForce(flickState.marble.body, flickState.marble.body.position, { x: fX, y: fY });
+                        const dx=e.clientX-flickState.startX, dy=e.clientY-flickState.startY;
+                        if (Math.abs(dx)>15 || Math.abs(dy)>15) {
+                            const maxF=0.09;
+                            Matter.Body.applyForce(flickState.marble.body, flickState.marble.body.position, {
+                                x: Math.max(-maxF, Math.min(maxF, dx*0.00035)),
+                                y: Math.max(-maxF, Math.min(maxF, dy*0.00035))
+                            });
                         }
-                        flickState.active = false; flickState.marble = null;
+                        flickState.active=false; flickState.marble=null;
                     }
                 });
 
                 window.addEventListener('deviceorientation', (e) => {
-                    if (currentMode === 'sandbox' || currentMode === 'maze') {
-                        let x = Math.max(-90, Math.min(90, e.gamma || 0)); let y = Math.max(-90, Math.min(90, e.beta || 0));  
-                        engine.gravity.x = (x / 90) * 2; engine.gravity.y = (y / 90) * 2;
+                    if (currentMode==='sandbox' || currentMode==='maze') {
+                        engine.gravity.x = (Math.max(-90,Math.min(90,e.gamma||0))/90)*2;
+                        engine.gravity.y = (Math.max(-90,Math.min(90,e.beta ||0))/90)*2;
                     }
                 });
 
-                function playAcousticRipple() { if (!audioCtx) return; const notes = [400, 500, 600, 800, 1200]; notes.forEach((freq, i) => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1); gain.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.1); gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + i * 0.1 + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.1 + 0.3); osc.start(audioCtx.currentTime + i * 0.1); osc.stop(audioCtx.currentTime + i * 0.1 + 0.3); }); }
-                function playAcousticTap(relS) { if (!audioCtx) return; const vol = Math.max(0.04, Math.min(0.5, relS * 0.045)); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05); gain.gain.setValueAtTime(vol, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); osc.start(); osc.stop(audioCtx.currentTime + 0.05); if (navigator.vibrate && vol > 0.15) { navigator.vibrate(Math.min(12, relS * 1.8)); } }
+                function playAcousticRipple() { if(!audioCtx)return; [400,500,600,800,1200].forEach((f,i)=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g);g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(f,audioCtx.currentTime+i*0.1); g.gain.setValueAtTime(0,audioCtx.currentTime+i*0.1); g.gain.linearRampToValueAtTime(0.2,audioCtx.currentTime+i*0.1+0.05); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+i*0.1+0.3); o.start(audioCtx.currentTime+i*0.1); o.stop(audioCtx.currentTime+i*0.1+0.3); }); }
+                function playAcousticTap(relS) { if(!audioCtx)return; const vol=Math.max(0.04,Math.min(0.5,relS*0.045)); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g);g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(900,audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(220,audioCtx.currentTime+0.05); g.gain.setValueAtTime(vol,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05); o.start(); o.stop(audioCtx.currentTime+0.05); if(navigator.vibrate&&vol>0.15) navigator.vibrate(Math.min(12,relS*1.8)); }
 
-                Events.on(engine, 'collisionStart', (event) => { const pairs = event.pairs; for (let i = 0; i < pairs.length; i++) { const { bodyA, bodyB } = pairs[i]; if (bodyA.isSensor || bodyB.isSensor) continue; const relS = (bodyA.speed || 0) + (bodyB.speed || 0); if (relS > 0.6) { playAcousticTap(relS); } } });
+                Events.on(engine, 'collisionStart', (ev) => { for(const {bodyA,bodyB} of ev.pairs) { if(bodyA.isSensor||bodyB.isSensor) continue; const relS=(bodyA.speed||0)+(bodyB.speed||0); if(relS>0.6) playAcousticTap(relS); } });
 
                 const runner = Runner.create(); Runner.run(runner, engine);
-                
-                function animate() { 
-                    requestAnimationFrame(animate); 
-                    
+
+                // Animate
+                let time = 0;
+                function animate() {
+                    requestAnimationFrame(animate);
+                    time += 0.016;
+
                     if (currentMode === 'orbit') {
                         orbitRotation += 0.005;
-                        marbles.forEach((m, i) => {
-                            const angle = orbitRotation + (i / marbles.length) * (Math.PI * 2);
-                            const targetX = Math.cos(angle) * 3;
-                            const targetY = Math.sin(angle) * 3;
-                            Matter.Body.setPosition(m.body, { x: targetX, y: targetY });
+                        marbles.forEach((m,i) => {
+                            const angle = orbitRotation + (i/marbles.length) * Math.PI * 2;
+                            Matter.Body.setPosition(m.body, {x: Math.cos(angle)*3, y: Math.sin(angle)*3});
                         });
                     }
 
-                    if (currentMode === 'koi') { 
-                        marbles.forEach(m => { m.mesh.rotation.x += 0.004; m.mesh.rotation.y += 0.004; }); 
-                    } 
-                    
-                    marbles.forEach(m => { 
-                        m.mesh.position.x = m.body.position.x; 
-                        m.mesh.position.y = -m.body.position.y; 
-                        if (currentMode !== 'koi') m.mesh.rotation.z = -m.body.angle; 
-                    }); 
-                    
-                    flippers.forEach(f => { f.mesh.position.x = f.body.position.x; f.mesh.position.y = -f.body.position.y; f.mesh.rotation.z = -f.body.angle; }); 
-                    
-                    renderer.render(scene, camera); 
+                    if (currentMode === 'koi') {
+                        marbles.forEach(m => { m.mesh.rotation.x += 0.004; m.mesh.rotation.y += 0.004; });
+                    }
+
+                    // Gentle bob on mode buttons
+                    insetButtons.forEach((btn, i) => {
+                        if (btn.unlocked) {
+                            btn.mesh.position.z = (0.56 + BTN_R) + Math.sin(time * 1.2 + i * 1.1) * 0.022;
+                        }
+                    });
+
+                    marbles.forEach(m => {
+                        m.mesh.position.x = m.body.position.x;
+                        m.mesh.position.y = -m.body.position.y;
+                        if (currentMode !== 'koi') m.mesh.rotation.z = -m.body.angle;
+                    });
+
+                    flippers.forEach(f => {
+                        f.mesh.position.x = f.body.position.x;
+                        f.mesh.position.y = -f.body.position.y;
+                        f.mesh.rotation.z = -f.body.angle;
+                    });
+
+                    renderer.render(scene, camera);
                 }
-                
+
                 animate(); loadState();
 
-            } catch (err) { }
+            } catch(err) { console.error(err); }
         }
-        if (document.readyState === 'complete' || document.readyState === 'interactive') { initApp(); } else { document.addEventListener('DOMContentLoaded', initApp); }
+
+        if (document.readyState==='complete'||document.readyState==='interactive') initApp();
+        else document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
